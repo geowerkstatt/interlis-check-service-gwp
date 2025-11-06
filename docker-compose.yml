@@ -8,22 +8,22 @@ secrets:
 services:
   web:
     # Docker image (NAME:TAG)
-    #   - image: ghcr.io/geowerkstatt/interlis-check-service:v3
+    #   - image: ghcr.io/geowerkstatt/interlis-check-service-gwp:v3
     #     Stable tag for a specific major version
     #
-    #   - image: ghcr.io/geowerkstatt/interlis-check-service:v3.2.1
+    #   - image: ghcr.io/geowerkstatt/interlis-check-service-gwp:v3.2.1
     #     Stable tag for a specific version
     #
-    #   - image: ghcr.io/geowerkstatt/interlis-check-service:latest
+    #   - image: ghcr.io/geowerkstatt/interlis-check-service-gwp:latest
     #     Points to the latest stable tag, no matter what the current major version is
     #     May contain breaking changes and incompatibilities
     #     NOT RECOMMENDED!
     #
-    #   - image: ghcr.io/geowerkstatt/interlis-check-service:edge
+    #   - image: ghcr.io/geowerkstatt/interlis-check-service-gwp:edge
     #     Reflects the last commit on the default branch (main)
     #     May contain breaking changes and incompatibilities
     #     NOT RECOMMENDED!
-    #image: ghcr.io/geowerkstatt/interlis-check-service:edge
+    #image: ghcr.io/geowerkstatt/interlis-check-service-gwp:edge
     build:
       context: .
       dockerfile: Dockerfile

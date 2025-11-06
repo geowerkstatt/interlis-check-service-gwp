@@ -7,8 +7,8 @@
     <Authors>geowerkstatt GmbH</Authors>
     <Company>geowerkstatt GmbH</Company>
     <Copyright>© geowerkstatt GmbH</Copyright>
-    <PackageProjectUrl>https://github.com/geowerkstatt/interlis-check-service</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/geowerkstatt/interlis-check-service.git</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/geowerkstatt/interlis-check-service-gwp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/geowerkstatt/interlis-check-service-gwp.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <AnalysisLevel>8.0-recommended</AnalysisLevel>
     <RootNamespace>Geowerkstatt.Ilicop.Web</RootNamespace>
