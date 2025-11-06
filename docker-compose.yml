@@ -155,7 +155,7 @@ services:
       - 3080:8080
 
   qgis-server:
-    image: camptocamp/qgis-server:latest
+    image: qgis/qgis-server:ltr
     ports:
       - "8380:80"
     volumes:
