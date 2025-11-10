@@ -164,7 +164,8 @@ services:
     ports:
       - "8380:80"
     volumes:
-      - ./data/Uploads:/uploads:ro
+      - ./data/Uploads:/uploads
     environment:
+      - QGIS_SERVER_FORCE_READONLY_LAYERS=true
       - QGIS_SERVER_LOG_LEVEL=0  # INFO (log all requests)
       - DEBUG=1                  # display env before spawning QGIS Server

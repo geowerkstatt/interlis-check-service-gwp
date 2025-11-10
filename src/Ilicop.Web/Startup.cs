@@ -22,6 +22,8 @@ using System.Net.Http;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
+using Yarp.ReverseProxy.Transforms;
 
 namespace Geowerkstatt.Ilicop.Web
 {
@@ -145,7 +147,19 @@ namespace Geowerkstatt.Ilicop.Web
 
             services.AddReverseProxy()
                 .AddTransformFactory<QueryRouteValuesTransformFactory>()
-                .LoadFromConfig(Configuration.GetSection("ReverseProxy"));
+                .LoadFromConfig(Configuration.GetSection("ReverseProxy"))
+                .AddTransforms(builderContext =>
+                {
+                    builderContext.AddRequestTransform(transformContext =>
+                    {
+                        var request = transformContext.HttpContext.Request;
+                        var originalUrl = $"{request.Scheme}://{request.Host}{request.PathBase}{request.Path}";
+
+                        transformContext.ProxyRequest.Headers.Remove("X-Qgis-Service-Url");
+                        transformContext.ProxyRequest.Headers.Add("X-Qgis-Service-Url", originalUrl);
+                        return ValueTask.CompletedTask;
+                    });
+                });
 
             services.AddTransient<IMapServiceUriGenerator, MapServiceUriGenerator>();
             services.Configure<MapServiceUriGenerationParameters>(Configuration.GetSection("MapServiceGeneration"));
