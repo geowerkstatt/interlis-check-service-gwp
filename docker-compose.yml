@@ -69,6 +69,9 @@ services:
     #
     #   - /path/to/local/model/repository:/repository
     #     Folder containing the local model repository
+    #
+    #   - /path/to/config:/config
+    #    Folder containing configuration files for GeoW.Interlis.Tools.GwpProcessor
     volumes:
       - ./data/Logs:/logs
       - ./data/Uploads:/uploads
@@ -76,6 +79,7 @@ services:
       - ./data/iliplugins:/plugins
       - ./data/Web-Assets:/web-assets
       - ./data/repositories/multi_profile:/repository
+      - ./data/config:/config 
     # Add environment variables
     #
     # environment:
@@ -144,7 +148,8 @@ services:
       - PGID=1000
       - ENABLE_GPKG_VALIDATION=true
       - ReverseProxy__Clusters__qgisservercluster__Destinations__qgisserver__Address=http://qgis-server:80/
-  
+      - GwpProcessor__ConfigDir=/config
+
     # Expose ports (HOST:CONTAINER)
     #
     # ports:
