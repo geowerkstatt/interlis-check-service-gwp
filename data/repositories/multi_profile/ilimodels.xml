@@ -96,6 +96,17 @@
         <md5>ae386646d46d5eba1b931ef9047a10ab</md5>
       </IliRepository20.RepositoryIndex.ModelMetadata>
 
+      <IliRepository09.RepositoryIndex.ModelMetadata TID="1007">
+        <Name>IliVErrors</Name>
+        <SchemaLanguage>ili2_3</SchemaLanguage>
+        <File>tools/IliVErrors.ili</File>
+        <Version>2016-06-10</Version>
+        <publishingDate>2017-01-12</publishingDate>
+        <technicalContact>mailto:info@interlis.ch</technicalContact>
+        <furtherInformation>https://www.interlis.ch</furtherInformation>
+        <md5>b41ab92753368ad32890d04bc77cc47f</md5>
+      </IliRepository09.RepositoryIndex.ModelMetadata>
+
     </IliRepository20.RepositoryIndex>
   </DATASECTION>
 </TRANSFER>

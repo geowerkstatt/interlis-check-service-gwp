@@ -1,4 +1,5 @@
 ﻿using Geowerkstatt.Ilicop.Web.Ilitools;
+using Geowerkstatt.Ilicop.Web.ReverseProxy;
 using Geowerkstatt.Ilicop.Web.Services;
 using Geowerkstatt.Interlis.RepositoryCrawler;
 using Microsoft.AspNetCore.Builder;
@@ -21,6 +22,8 @@ using System.Net.Http;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
+using Yarp.ReverseProxy.Transforms;
 
 namespace Geowerkstatt.Ilicop.Web
 {
@@ -96,12 +99,14 @@ namespace Geowerkstatt.Ilicop.Web
             services.AddSingleton<IValidatorService, ValidatorService>();
             services.AddHostedService(services => (ValidatorService)services.GetService<IValidatorService>());
             services.AddTransient<IValidator, Validator>();
+            services.AddTransient<IProcessor, GwpProcessor>();
             services.AddTransient<IFileProvider, PhysicalFileProvider>(x => new PhysicalFileProvider(x.GetRequiredService<IConfiguration>(), "ILICOP_UPLOADS_DIR"));
             services.AddControllers().AddJsonOptions(options =>
             {
                 options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
                 options.JsonSerializerOptions.Converters.Add(new GeoJsonConverterFactory());
             });
+            services.Configure<GwpProcessorOptions>(Configuration.GetSection("GwpProcessor"));
             services.Configure<FormOptions>(options =>
             {
                 options.MultipartBodyLengthLimit = MaxRequestBodySize;
@@ -139,6 +144,25 @@ namespace Geowerkstatt.Ilicop.Web
             {
                 configuration.RootPath = "ClientApp/build";
             });
+
+            services.AddReverseProxy()
+                .AddTransformFactory<QueryRouteValuesTransformFactory>()
+                .LoadFromConfig(Configuration.GetSection("ReverseProxy"))
+                .AddTransforms(builderContext =>
+                {
+                    builderContext.AddRequestTransform(transformContext =>
+                    {
+                        var request = transformContext.HttpContext.Request;
+                        var originalUrl = $"{request.Scheme}://{request.Host}{request.PathBase}{request.Path}";
+
+                        transformContext.ProxyRequest.Headers.Remove("X-Qgis-Service-Url");
+                        transformContext.ProxyRequest.Headers.Add("X-Qgis-Service-Url", originalUrl);
+                        return ValueTask.CompletedTask;
+                    });
+                });
+
+            services.AddTransient<IMapServiceUriGenerator, MapServiceUriGenerator>();
+            services.Configure<MapServiceUriGenerationParameters>(Configuration.GetSection("MapServiceGeneration"));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -175,7 +199,6 @@ namespace Geowerkstatt.Ilicop.Web
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseSpaStaticFiles();
-
             app.UseCors("CorsSettings");
             app.UseRouting();
 
@@ -183,6 +206,7 @@ namespace Geowerkstatt.Ilicop.Web
             {
                 endpoints.MapControllerRoute(name: "default", pattern: "{controller}/{action=Index}/{id?}");
                 endpoints.MapHealthChecks("/health");
+                endpoints.MapReverseProxy();
             });
 
             app.UseSwagger(options =>
