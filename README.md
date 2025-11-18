@@ -10,6 +10,7 @@ Webbasierter Checkservice für INTERLIS Datenabgaben
 ## Inhaltsverzeichnis <!-- omit in toc -->
 
 - [Quick Start](#quick-start)
+- [GWP Konfiguration](#gwp-konfiguration)
 - [Individuelle Anpassung](#individuelle-anpassung)
   - [ilivalidator](#ilivalidator)
   - [Web-Check-Service](#web-check-service)
@@ -17,6 +18,7 @@ Webbasierter Checkservice für INTERLIS Datenabgaben
 - [Health Check API](#health-check-api)
 - [Einrichten der Entwicklungsumgebung](#einrichten-der-entwicklungsumgebung)
 - [Neue Version erstellen](#neue-version-erstellen)
+- [Fork aktualisieren](#fork-aktualisieren)
 - [Lizenz](#lizenz)
 
 ## Quick Start
@@ -424,6 +426,25 @@ Folgenden Komponenten müssen auf dem Entwicklungsrechner installiert sein:
 ## Neue Version erstellen
 
 Ein neuer GitHub *Pre-release* wird bei jeder Änderung auf [main](https://github.com/geowerkstatt/interlis-check-service-gwp) [automatisch](./.github/workflows/pre-release.yml) erstellt. In diesem Kontext wird auch ein neues Docker Image mit dem Tag *:edge* erstellt und in die [GitHub Container Registry (ghcr.io)](https://github.com/geowerkstatt/interlis-check-service-gwp/pkgs/container/interlis-check-service-gwp) gepusht. Der definitve Release erfolgt, indem die Checkbox *This is a pre-release* eines beliebigen Pre-releases entfernt wird. In der Folge wird das entsprechende Docker Image in der ghcr.io Registry mit den Tags (bspw.: *:v1*, *:v1.2.3* und *:latest*) [ergänzt](./.github/workflows/release.yml).
+
+## Fork aktualisieren
+
+Dieses Repository ist ein Fork vom Hauptrepository [Interlis-Check-Service](https://github.com/geowerkstatt/interlis-check-service).
+Wenn Änderungen im Hauptrepository gemacht wurden, können sie diesen Fork übernommen werden. Dafür muss das Hauptrepository als weiteren `remote` hinzugefügt werden.
+Danach kann der benötigte Branch vom Hauptrepository in einen beliebigen Branch vom Fork gemerged werden.
+
+Z.B. kann `main` von diesem Fork wie folgt mit `main` vom Hauptrepository aktualisiert werden:
+```bash
+# Hinzufügen des Hauptrepositories als upstream
+git remote add upstream https://github.com/geowerkstatt/interlis-check-service.git
+
+git fetch upstream
+
+git checkout -b my-merge-branch
+
+git merge upstream/main
+```
+Folgend können die Änderungen wie gewohnt von `my-merge-branch` mittels PR in `main` gemerged werden.
 
 ## Lizenz
 
