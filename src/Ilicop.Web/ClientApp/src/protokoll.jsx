@@ -4,11 +4,14 @@ import DayJS from "dayjs";
 import { Card, Col, Container, Row } from "react-bootstrap";
 import { GoFile, GoFileCode } from "react-icons/go";
 import { BsGeoAlt, BsLink45Deg, BsFiletypeCsv, BsFileZip, BsMap } from "react-icons/bs";
+import { Spinner } from "react-bootstrap";
 import { LogDisplay } from "./logDisplay";
+import { useTranslation } from "react-i18next";
 import { CopyLinkToClipboard } from "./copyLinkToClipboard";
 
 export const Protokoll = (props) => {
   const { log, statusData, fileName, validationRunning } = props;
+  const { t } = useTranslation();
   const [indicateWaiting, setIndicateWaiting] = useState(false);
   const protokollTimestamp = DayJS(new Date()).format("YYYYMMDDHHmm");
   const protokollFileName = "Ilivalidator_output_" + fileName + "_" + protokollTimestamp;
@@ -28,8 +31,12 @@ export const Protokoll = (props) => {
     }, 500)
   );
 
+  const getTranslatedLogMessage = (logEntry) => {
+    return t(logEntry.messageKey, logEntry.messageParams);
+  };
+
   const statusClass = statusData && statusData.status === "completed" ? "valid" : "errors";
-  const statusText = statusData && statusData.status === "completed" ? "Keine Fehler!" : "Fehler!";
+  const statusText = statusData && statusData.status === "completed" ? "protocol.noErrors" : "protocol.errors";
 
   return (
     <Container>
@@ -41,15 +48,17 @@ export const Protokoll = (props) => {
                 <div className="protokoll">
                   {log.map((logEntry, index) => (
                     <div key={index}>
-                      {logEntry}
-                      {indicateWaiting && index === log.length - 1 && "."}
+                      {validationRunning && index === log.length - 1 && (
+                        <Spinner className="protokoll-spinner" size="sm" animation="border" />
+                      )}
+                      {getTranslatedLogMessage(logEntry)}
                     </div>
                   ))}
                   <div ref={logEndRef} />
                 </div>
                 {statusData && (
                   <Card.Title className={`status ${statusClass}`}>
-                    {statusText}
+                    {t(statusText)}
                     <span>
                       {statusData.logUrl && (
                         <span className="icon-tooltip">
@@ -60,7 +69,7 @@ export const Protokoll = (props) => {
                           >
                             <GoFile />
                           </a>
-                          <span className="icon-tooltip-text">Log-Datei herunterladen</span>
+                          <span className="icon-tooltip-text">Log-{t("protocol.downloadFile")}</span>
                         </span>
                       )}
                       {statusData.xtfLogUrl && (
@@ -72,14 +81,14 @@ export const Protokoll = (props) => {
                           >
                             <GoFileCode />
                           </a>
-                          <span className="icon-tooltip-text">XTF-Log-Datei herunterladen</span>
+                          <span className="icon-tooltip-text">XTF-Log-{t("protocol.downloadFile")}</span>
                         </span>
                       )}
                       {statusData.xtfLogUrl && (
                         <span className="icon-tooltip">
                           <CopyLinkToClipboard
                             className={statusClass + " btn-sm download-icon"}
-                            tooltipText="XTF-Log-Datei Link in die Zwischenablage kopieren"
+                            tooltipText={t("protocol.copyXtfLogFileLinkToClipboard")}
                             link={statusData.xtfLogUrl}
                           >
                             <BsLink45Deg />
@@ -90,7 +99,7 @@ export const Protokoll = (props) => {
                         <span className="icon-tooltip">
                           <CopyLinkToClipboard
                             className={statusClass + " btn-sm download-icon"}
-                            tooltipText="WMS/WFS Link in die Zwischenablage kopieren"
+                            tooltipText={t("protocol.copyWmsWfsLinkToClipboard")}
                             link={statusData.mapServiceUrl}
                           >
                             <BsMap />
@@ -106,7 +115,7 @@ export const Protokoll = (props) => {
                           >
                             <BsFiletypeCsv />
                           </a>
-                          <span className="icon-tooltip-text">CSV-Log-Datei herunterladen</span>
+                          <span className="icon-tooltip-text">CSV-Log-{t("protocol.downloadFile")}</span>
                         </span>
                       )}
                       {statusData.zipUrl && (
@@ -130,9 +139,7 @@ export const Protokoll = (props) => {
                           >
                             <BsGeoAlt />
                           </a>
-                          <span className="icon-tooltip-text">
-                            Positionsbezogene Log-Daten als GeoJSON-Datei herunterladen
-                          </span>
+                          <span className="icon-tooltip-text">{t("protocol.downloadGeoJson")}</span>
                         </span>
                       )}
                     </span>
