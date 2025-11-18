@@ -178,6 +178,7 @@ Um den INTERLIS Web-Check-Service für GWP zu konfigurieren muss ein Config-Ordn
 {ConfigDir}
 ├───example_profile1
 |   ├───{DataGpkgFileName}
+|   ├───{QgisProjectFileName}
 │   └───{AdditionalFilesFolderName}
 │       └───...
 ├───example_profile2
@@ -186,6 +187,7 @@ Um den INTERLIS Web-Check-Service für GWP zu konfigurieren muss ein Config-Ordn
 
 - `{ConfigDir}`:<br>Ordner für die GWP Konfiguration. Enthält für jedes Profil einen eigenen Unterordner.
 - `{DataGpkgFileName}`:<br>Template GeoPackage Datei für das jeweilige Profil. Es muss das Schema für die benötigten INTERLIS Modelle enthalten.
+- `{QgisProjectFileName}`:<br>Optionales QGIS Projekt für das jeweilige Profil. Wird im QGIS Server für die Visualisierung der Ergebnisse verwendet.
 - `{AdditionalFilesFolderName}`:<br>Optionaler Ordner für zusätzliche Dateien, die für das jeweilige Profil im ZIP ausgeliefert werden sollen.
 
 Die Pfade, Namen und Weiteres können im `appsettings.json` konfiguriert werden:
@@ -193,6 +195,7 @@ Die Pfade, Namen und Weiteres können im `appsettings.json` konfiguriert werden:
 "GwpProcessor": {
     "ConfigDir": "" // optional
     "DataGpkgFileName": "", // default: "data.gpkg"
+    "QgisProjectFileName": "", // default: "service.qgs"
     "AdditionalFilesFolderName": "" // default: "AdditionalFiles"
     "ZipOutputFileName": "" // default: "gwp_results_log.zip". Interner Name der ZIP Datei, welche für jeden Job erstellt wird.
 }
