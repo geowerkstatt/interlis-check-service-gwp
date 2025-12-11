@@ -54,7 +54,8 @@ public class GwpProcessor : IProcessor
         if (TryCopyTemplateGpkg(profile, out var dataGpkgFilePath))
         {
             var importTransferFileExitCode = await ImportTransferFileToGpkg(fileProvider, dataGpkgFilePath, transferFile.FileName, cancellationToken);
-            var importLogTransferFileExitCode = await ImportLogToGpkg(fileProvider, dataGpkgFilePath, cancellationToken);
+            TryGetPostSqlScriptPath(profile, out var postSqlScriptPath);
+            var importLogTransferFileExitCode = await ImportLogToGpkg(fileProvider, dataGpkgFilePath, postSqlScriptPath, cancellationToken);
 
             if (importLogTransferFileExitCode == 0 && importTransferFileExitCode == 0)
             {
@@ -151,7 +152,7 @@ public class GwpProcessor : IProcessor
         return true;
     }
 
-    private async Task<int> ImportLogToGpkg(IFileProvider fileProvider, string gpkgFilePath, CancellationToken cancellationToken)
+    private async Task<int> ImportLogToGpkg(IFileProvider fileProvider, string gpkgFilePath, string postSqlScriptPath, CancellationToken cancellationToken)
     {
         var logFileName = fileProvider.GetFiles().FirstOrDefault(f => f.EndsWith("_log.xtf", StringComparison.InvariantCultureIgnoreCase));
         var logFilePath = Path.Combine(fileProvider.HomeDirectory.FullName, logFileName);
@@ -162,9 +163,24 @@ public class GwpProcessor : IProcessor
             FileName = logFileName,
             DbFilePath = gpkgFilePath,
             Dataset = "Logs",
+            PostSqlScriptPath = postSqlScriptPath,
         };
 
         return await ilitoolsExecutor.ImportToGpkgAsync(logFileImportRequest, cancellationToken).ConfigureAwait(false);
+    }
+
+    private bool TryGetPostSqlScriptPath(Profile profile, out string postSqlScriptPath)
+    {
+        postSqlScriptPath = Path.Combine(configDir.FullName, profile.Id, gwpProcessorOptions.PostSqlScriptFileName);
+
+        if (!File.Exists(postSqlScriptPath))
+        {
+            logger.LogInformation("No post sql script found at <{PostSqlScriptPath}>", postSqlScriptPath);
+            postSqlScriptPath = null;
+            return false;
+        }
+
+        return true;
     }
 
     private async Task<int> ImportTransferFileToGpkg(IFileProvider fileProvider, string gpkgFilePath, string transferFile, CancellationToken cancellationToken)

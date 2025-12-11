@@ -33,4 +33,11 @@ public class GwpProcessorOptions
     /// The name of the QGIS file given to the QGIS Server as basis for map services.
     /// </summary>
     public string QgisProjectFileName { get; set; } = "service.qgs";
+
+    /// <summary>
+    /// The name of the SQL script file in a profile's configuration directory.
+    /// If a profile has a script with this name in its config directory, the script is executed after all imports into the GeoPackage have been completed.
+    /// This script is executed with the last ili2gpkg import command using the --postScript parameter.
+    /// </summary>
+    public string PostSqlScriptFileName { get; set; } = "postscript.sql";
 }
