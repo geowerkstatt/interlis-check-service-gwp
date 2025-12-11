@@ -249,6 +249,11 @@ namespace Geowerkstatt.Ilicop.Web.Ilitools
                 $"--dbfile \"{request.DbFilePath}\"",
             };
 
+            if (!string.IsNullOrEmpty(request.PostSqlScriptPath))
+            {
+                args.Add($"--postScript \"{request.PostSqlScriptPath}\"");
+            }
+
             args.AddRange(GetCommonIlitoolsArguments(request));
             args.Add($"\"{request.FilePath}\"");
 
