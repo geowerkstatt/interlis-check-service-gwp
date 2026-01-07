@@ -1,4 +1,5 @@
-﻿using Geowerkstatt.Ilicop.Web.Contracts;
+﻿using Asp.Versioning;
+using Geowerkstatt.Ilicop.Web.Contracts;
 using Geowerkstatt.Ilicop.Web.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -30,7 +31,7 @@ namespace Geowerkstatt.Ilicop.Web.Controllers
             loggerMock = new Mock<ILogger<StatusController>>();
             validatorServiceMock = new Mock<IValidatorService>(MockBehavior.Strict);
             fileProviderMock = new Mock<IFileProvider>(MockBehavior.Strict);
-            apiVersionMock = new Mock<ApiVersion>(MockBehavior.Strict, 8, 77);
+            apiVersionMock = new Mock<ApiVersion>(MockBehavior.Strict, 8, 77, null);
             gwpProcessorOptionsMock = new Mock<IOptions<GwpProcessorOptions>>(MockBehavior.Strict);
             mapServiceUriGeneratorMock = new Mock<IMapServiceUriGenerator>(MockBehavior.Strict);
 

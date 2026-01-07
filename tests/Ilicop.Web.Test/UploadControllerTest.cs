@@ -1,4 +1,5 @@
-﻿using Geowerkstatt.Ilicop.Web.Contracts;
+﻿using Asp.Versioning;
+using Geowerkstatt.Ilicop.Web.Contracts;
 using Geowerkstatt.Ilicop.Web.Services;
 using Geowerkstatt.Interlis.RepositoryCrawler;
 using Microsoft.AspNetCore.Http;
@@ -44,7 +45,7 @@ namespace Geowerkstatt.Ilicop.Web.Controllers
             processorMock = new Mock<IProcessor>(MockBehavior.Strict);
             profileServiceMock = new Mock<IProfileService>(MockBehavior.Strict);
             formFileMock = new Mock<IFormFile>(MockBehavior.Strict);
-            apiVersionMock = new Mock<ApiVersion>(MockBehavior.Strict, 9, 88);
+            apiVersionMock = new Mock<ApiVersion>(MockBehavior.Strict, 9, 88, null);
 
             validatorMock.SetupGet(x => x.Id).Returns(new Guid(jobId));
 

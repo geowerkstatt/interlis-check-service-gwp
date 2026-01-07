@@ -1,4 +1,5 @@
-﻿using Geowerkstatt.Ilicop.Web.Ilitools;
+﻿using Asp.Versioning;
+using Geowerkstatt.Ilicop.Web.Ilitools;
 using Geowerkstatt.Ilicop.Web.ReverseProxy;
 using Geowerkstatt.Ilicop.Web.Services;
 using Geowerkstatt.Interlis.RepositoryCrawler;
@@ -7,7 +8,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc.Controllers;
-using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
@@ -55,9 +55,15 @@ namespace Geowerkstatt.Ilicop.Web
             services.AddApiVersioning(config =>
             {
                 config.AssumeDefaultVersionWhenUnspecified = true;
-                config.DefaultApiVersion = new Microsoft.AspNetCore.Mvc.ApiVersion(1, 0);
+                config.DefaultApiVersion = new ApiVersion(1, 0);
                 config.ReportApiVersions = true;
                 config.ApiVersionReader = new HeaderApiVersionReader("api-version");
+            })
+            .AddApiExplorer(options =>
+            {
+                options.GroupNameFormat = "'v'VVV";
+                options.SubstituteApiVersionInUrl = true;
+                options.ApiVersionParameterSource = new UrlSegmentApiVersionReader();
             });
             services.AddCors(options =>
             {
