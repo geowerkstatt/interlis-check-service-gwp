@@ -75,8 +75,8 @@ namespace Geowerkstatt.Ilicop.Web.Controllers
 
             var response = controller.GetStatus(apiVersionMock.Object, jobId) as OkObjectResult;
 
-            Assert.IsInstanceOfType(response, typeof(OkObjectResult));
-            Assert.IsInstanceOfType(response.Value, typeof(StatusResponse));
+            Assert.IsInstanceOfType<OkObjectResult>(response);
+            Assert.IsInstanceOfType<StatusResponse>(response.Value);
             Assert.AreEqual(StatusCodes.Status200OK, response.StatusCode);
             Assert.AreEqual(jobId, ((StatusResponse)response.Value).JobId);
             Assert.AreEqual(Status.Processing, ((StatusResponse)response.Value).Status);
@@ -103,8 +103,8 @@ namespace Geowerkstatt.Ilicop.Web.Controllers
 
             var response = controller.GetStatus(apiVersionMock.Object, jobId) as OkObjectResult;
 
-            Assert.IsInstanceOfType(response, typeof(OkObjectResult));
-            Assert.IsInstanceOfType(response.Value, typeof(StatusResponse));
+            Assert.IsInstanceOfType<OkObjectResult>(response);
+            Assert.IsInstanceOfType<StatusResponse>(response.Value);
             Assert.AreEqual(StatusCodes.Status200OK, response.StatusCode);
             Assert.AreEqual($"/api/v8/download?jobId={jobId}&logType=geojson", ((StatusResponse)response.Value).GeoJsonLogUrl.ToString());
         }
@@ -121,7 +121,7 @@ namespace Geowerkstatt.Ilicop.Web.Controllers
 
             var response = controller.GetStatus(apiVersionMock.Object, default) as ObjectResult;
 
-            Assert.IsInstanceOfType(response, typeof(ObjectResult));
+            Assert.IsInstanceOfType<ObjectResult>(response);
             Assert.AreEqual(StatusCodes.Status404NotFound, response.StatusCode);
             Assert.AreEqual($"No job information available for job id <{jobId}>", ((ProblemDetails)response.Value).Detail);
         }
