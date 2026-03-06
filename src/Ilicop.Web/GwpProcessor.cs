@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
@@ -20,6 +21,7 @@ namespace Geowerkstatt.Ilicop.Web;
 public class GwpProcessor : IProcessor
 {
     private readonly IFileProvider fileProvider;
+    private readonly IValidator validator;
     private readonly DirectoryInfo configDir;
     private readonly ILogger<GwpProcessor> logger;
     private readonly GwpProcessorOptions gwpProcessorOptions;
@@ -28,10 +30,12 @@ public class GwpProcessor : IProcessor
     public GwpProcessor(
         IOptions<GwpProcessorOptions> gwpProcessorOptions,
         IFileProvider fileProvider,
+        IValidator validator,
         IlitoolsExecutor ilitoolsExecutor,
         ILogger<GwpProcessor> logger)
     {
         this.fileProvider = fileProvider ?? throw new ArgumentNullException(nameof(fileProvider));
+        this.validator = validator ?? throw new ArgumentNullException(nameof(validator));
         this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
         this.gwpProcessorOptions = gwpProcessorOptions?.Value ?? throw new ArgumentNullException(nameof(gwpProcessorOptions));
         this.ilitoolsExecutor = ilitoolsExecutor ?? throw new ArgumentNullException(nameof(ilitoolsExecutor));
@@ -51,24 +55,34 @@ public class GwpProcessor : IProcessor
 
         fileProvider.Initialize(jobId);
 
+        Exception validationException = null;
+
         if (TryCopyTemplateGpkg(profile, out var dataGpkgFilePath))
         {
             var importTransferFileExitCode = await ImportTransferFileToGpkg(fileProvider, dataGpkgFilePath, transferFile.FileName, cancellationToken);
-            TryGetPostSqlScriptPath(profile, out var postSqlScriptPath);
+
+            if (importTransferFileExitCode != 0)
+            {
+                logger.LogInformation("Import of transfer file to GeoPackage failed for profile <{ProfileId}> with exit code <{ExitCode}>.", profile.Id, importTransferFileExitCode, jobId);
+                throw new GwpProcessorException();
+            }
+
+            var translatedFile = await CreateTranslatedTransferFile(dataGpkgFilePath, transferFile, profile, cancellationToken);
+
+            try
+            {
+                await validator.ExecuteAsync(translatedFile.FileName, profile, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                validationException = ex;
+            }
+
             var importLogTransferFileExitCode = await ImportLogToGpkg(fileProvider, dataGpkgFilePath, postSqlScriptPath, cancellationToken);
+            TryGetPostSqlScriptPath(profile, out var postSqlScriptPath);
+            TryCopyQgisServiceFile(fileProvider, profile);
 
-            if (importLogTransferFileExitCode == 0 && importTransferFileExitCode == 0)
-            {
-                if (IsTranslationNeeded(dataGpkgFilePath))
-                    await CreateTranslatedTransferFile(dataGpkgFilePath, transferFile, profile, cancellationToken);
-
-                TryCopyQgisServiceFile(fileProvider, profile);
-            }
-            else
-            {
-                File.Delete(dataGpkgFilePath);
-                logger.LogWarning("Importing transfer file or log file to GeoPackage failed for profile <{ProfileId}>. Deleting GeoPackage again for job <{JobId}>.", profile.Id, jobId);
-            }
+            logger.LogWarning("Importing transfer file or log file to GeoPackage failed for profile <{ProfileId}>. Deleting GeoPackage again for job <{JobId}>.", profile.Id, jobId);
         }
         else
         {
@@ -76,9 +90,11 @@ public class GwpProcessor : IProcessor
         }
 
         CreateZip(jobId, transferFile, profile);
+
+        if (validationException != null) throw validationException;
     }
 
-    private async Task CreateTranslatedTransferFile(string gpkgPath, NamedFile transferFile, Profile profile, CancellationToken cancellationToken)
+    private async Task<NamedFile> CreateTranslatedTransferFile(string gpkgPath, NamedFile transferFile, Profile profile, CancellationToken cancellationToken)
     {
         var translatedTransferFile = GetTranslatedTransferFile(transferFile);
 
@@ -91,7 +107,11 @@ public class GwpProcessor : IProcessor
             Dataset = "Data",
         };
 
-        await ilitoolsExecutor.ExportFromGpkgAsync(exportRequest, cancellationToken);
+        var resultCode = await ilitoolsExecutor.ExportFromGpkgAsync(exportRequest, cancellationToken);
+
+        if (resultCode != 0) throw new GwpProcessorException("An error occurred during export of the translated transfer file.");
+
+        return translatedTransferFile;
     }
 
     private bool IsTranslationNeeded(string gpkgPath)
@@ -228,10 +248,9 @@ public class GwpProcessor : IProcessor
         if (File.Exists(gpkgFilePath))
             filesToZip.Add(new NamedFile(gpkgFilePath, gwpProcessorOptions.DataGpkgFileName));
 
-        // Add translated transfer file if exists
-        var translatedTransferFile = GetTranslatedTransferFile(transferFile);
-        if (File.Exists(translatedTransferFile.FilePath))
-            filesToZip.Add(translatedTransferFile);
+        // Add translated transfer file if the uploaded transfer file(s) were not already the correct language
+        if (IsTranslationNeeded(gpkgFilePath))
+            filesToZip.Add(GetTranslatedTransferFile(transferFile));
 
         return filesToZip;
     }

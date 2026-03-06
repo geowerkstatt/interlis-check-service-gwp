@@ -46,6 +46,10 @@ namespace Geowerkstatt.Ilicop.Web
                 {
                     UpdateJobStatus(item.Id, Status.CompletedWithErrors, "Multiple transfer files found", ex.Message);
                 }
+                catch (InvalidTransferFileException ex)
+                {
+                    UpdateJobStatus(item.Id, Status.CompletedWithErrors, "Invalid", ex.Message);
+                }
                 catch (TransferFileNotFoundException ex)
                 {
                     UpdateJobStatus(item.Id, Status.CompletedWithErrors, "No transfer file found", ex.Message);
