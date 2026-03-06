@@ -142,26 +142,14 @@ namespace Geowerkstatt.Ilicop.Web.Controllers
                     httpRequest.ContentLength,
                     formattedUserAgent);
 
+                var namedTransferFile = new NamedFile(
+                    Path.Combine(fileProvider.HomeDirectory.FullName, transferFile),
+                    file.FileName);
+
                 // Add validation job to queue.
                 await validatorService.EnqueueJobAsync(
                     validator.Id,
-                    async cancellationToken =>
-                    {
-                        var namedTransferFile = new NamedFile(
-                            Path.Combine(fileProvider.HomeDirectory.FullName, transferFile),
-                            file.FileName);
-
-                        try
-                        {
-                            await validator.ExecuteAsync(transferFile, foundProfile, cancellationToken);
-                            await processor.Run(validator.Id, namedTransferFile, foundProfile, cancellationToken);
-                        }
-                        catch (ValidationFailedException)
-                        {
-                            await processor.Run(validator.Id, namedTransferFile, foundProfile, cancellationToken);
-                            throw;
-                        }
-                    });
+                    cancellationToken => processor.Run(validator, namedTransferFile, foundProfile, cancellationToken));
 
                 logger.LogInformation("Job with id <{JobId}> is scheduled for execution.", validator.Id);
 

@@ -1,10 +1,12 @@
 ﻿using Geowerkstatt.Ilicop.Web.Contracts;
+using Geowerkstatt.Ilicop.Web.Exceptions;
 using Geowerkstatt.Ilicop.Web.Ilitools;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
@@ -41,44 +43,47 @@ public class GwpProcessor : IProcessor
     }
 
     /// <inheritdoc />
-    public async Task Run(Guid jobId, NamedFile transferFile, Profile profile, CancellationToken cancellationToken)
+    public async Task Run(IValidator validator, NamedFile transferFile, Profile profile, CancellationToken cancellationToken)
     {
         if (configDir == null || !Directory.Exists(Path.Combine(configDir.FullName, profile.Id)))
         {
-            logger.LogInformation("No configuration directory found for profile <{ProfileId}>. Skipping GWP processing for job <{JobId}>.", profile.Id, jobId);
-            return;
+            throw new GwpProcessorException($"No configuration directory found for profile <{profile.Id}>. Expected path: <{configDir}>");
         }
 
+        var jobId = validator.Id;
         fileProvider.Initialize(jobId);
 
-        if (TryCopyTemplateGpkg(profile, out var dataGpkgFilePath))
-        {
-            var importTransferFileExitCode = await ImportTransferFileToGpkg(fileProvider, dataGpkgFilePath, transferFile.FileName, cancellationToken);
-            TryGetPostSqlScriptPath(profile, out var postSqlScriptPath);
-            var importLogTransferFileExitCode = await ImportLogToGpkg(fileProvider, dataGpkgFilePath, postSqlScriptPath, cancellationToken);
+        Exception validationException = null;
 
-            if (importLogTransferFileExitCode == 0 && importTransferFileExitCode == 0)
-            {
-                if (IsTranslationNeeded(dataGpkgFilePath))
-                    await CreateTranslatedTransferFile(dataGpkgFilePath, transferFile, profile, cancellationToken);
+        var dataGpkgFilePath = CopyTemplateGpkg(profile);
 
-                TryCopyQgisServiceFile(fileProvider, profile);
-            }
-            else
-            {
-                File.Delete(dataGpkgFilePath);
-                logger.LogWarning("Importing transfer file or log file to GeoPackage failed for profile <{ProfileId}>. Deleting GeoPackage again for job <{JobId}>.", profile.Id, jobId);
-            }
-        }
-        else
+        var importTransferFileExitCode = await ImportTransferFileToGpkg(fileProvider, dataGpkgFilePath, transferFile.FileName, cancellationToken);
+
+        if (importTransferFileExitCode != 0)
         {
-            logger.LogWarning("Template GeoPackage for profile <{Profile}> file could not be copied. Skipping GWP GeoPackage creation for job <{JobId}>.", profile.Id, jobId);
+            throw new InvalidTransferFileException($"Import of transfer file to GeoPackage failed for profile <{profile.Id}> with exit code <{importTransferFileExitCode}>.");
         }
 
+        var translatedFile = await CreateTranslatedTransferFile(dataGpkgFilePath, transferFile, profile, cancellationToken);
+
+        try
+        {
+            await validator.ExecuteAsync(translatedFile.FileName, profile, cancellationToken);
+        }
+        catch (ValidationFailedException ex)
+        {
+            validationException = ex;
+        }
+
+        TryGetPostSqlScriptPath(profile, out var postSqlScriptPath);
+        var importLogTransferFileExitCode = await ImportLogToGpkg(fileProvider, dataGpkgFilePath, postSqlScriptPath, cancellationToken);
+        TryCopyQgisServiceFile(fileProvider, profile);
         CreateZip(jobId, transferFile, profile);
+
+        if (validationException != null) throw validationException;
     }
 
-    private async Task CreateTranslatedTransferFile(string gpkgPath, NamedFile transferFile, Profile profile, CancellationToken cancellationToken)
+    private async Task<NamedFile> CreateTranslatedTransferFile(string gpkgPath, NamedFile transferFile, Profile profile, CancellationToken cancellationToken)
     {
         var translatedTransferFile = GetTranslatedTransferFile(transferFile);
 
@@ -91,7 +96,11 @@ public class GwpProcessor : IProcessor
             Dataset = "Data",
         };
 
-        await ilitoolsExecutor.ExportFromGpkgAsync(exportRequest, cancellationToken);
+        var resultCode = await ilitoolsExecutor.ExportFromGpkgAsync(exportRequest, cancellationToken);
+
+        if (resultCode != 0) throw new GwpProcessorException("An error occurred during export of the translated transfer file.");
+
+        return translatedTransferFile;
     }
 
     private bool IsTranslationNeeded(string gpkgPath)
@@ -110,19 +119,16 @@ public class GwpProcessor : IProcessor
         return importedBasketsModel.Except(splitModels);
     }
 
-    private bool TryCopyTemplateGpkg(Profile profile, out string dataGpkgFilePath)
+    private string CopyTemplateGpkg(Profile profile)
     {
         var templateGpkgFilePath = Path.Combine(configDir.FullName, profile.Id, gwpProcessorOptions.DataGpkgFileName);
 
         if (!File.Exists(templateGpkgFilePath))
         {
-            logger.LogWarning("No template GeoPackage file found at <{TemplateGpkgFilePath}>.", templateGpkgFilePath);
-
-            dataGpkgFilePath = null;
-            return false;
+            throw new GwpProcessorException($"Template GeoPackage file for profile <{profile.Id}> could not be found. Expected path: <{templateGpkgFilePath}>.");
         }
 
-        dataGpkgFilePath = Path.Combine(fileProvider.HomeDirectory.FullName, gwpProcessorOptions.DataGpkgFileName);
+        var dataGpkgFilePath = Path.Combine(fileProvider.HomeDirectory.FullName, gwpProcessorOptions.DataGpkgFileName);
 
         using (var destGpkgFileStream = fileProvider.CreateFile(dataGpkgFilePath))
         using (var sourceGpkgFileStream = File.OpenRead(templateGpkgFilePath))
@@ -130,13 +136,17 @@ public class GwpProcessor : IProcessor
             sourceGpkgFileStream.CopyTo(destGpkgFileStream);
         }
 
-        return true;
+        return dataGpkgFilePath;
     }
 
     private bool TryCopyQgisServiceFile(IFileProvider fileProvider, Profile profile)
     {
         var serviceFile = Path.Combine(configDir.FullName, profile.Id, gwpProcessorOptions.QgisProjectFileName);
-        if (!File.Exists(serviceFile)) return false;
+        if (!File.Exists(serviceFile))
+        {
+            logger.LogInformation($"QGIS service file for profile <{profile.Id}> could not be found. Expected path: <{serviceFile}>.");
+            return false;
+        }
 
         try
         {
@@ -145,8 +155,7 @@ public class GwpProcessor : IProcessor
         }
         catch (SystemException ex)
         {
-            logger.LogError(ex, "Failed to copy QGIS project file for profile <{ProfileId}>.", profile.Id);
-            return false;
+            throw new GwpProcessorException($"Failed to copy QGIS project file for profile <{profile.Id}>.", ex);
         }
 
         return true;
@@ -175,7 +184,7 @@ public class GwpProcessor : IProcessor
 
         if (!File.Exists(postSqlScriptPath))
         {
-            logger.LogInformation("No post sql script found at <{PostSqlScriptPath}>", postSqlScriptPath);
+            logger.LogInformation("No post sql script found at <{PostSqlScriptPath}>.", postSqlScriptPath);
             postSqlScriptPath = null;
             return false;
         }
@@ -228,10 +237,9 @@ public class GwpProcessor : IProcessor
         if (File.Exists(gpkgFilePath))
             filesToZip.Add(new NamedFile(gpkgFilePath, gwpProcessorOptions.DataGpkgFileName));
 
-        // Add translated transfer file if exists
-        var translatedTransferFile = GetTranslatedTransferFile(transferFile);
-        if (File.Exists(translatedTransferFile.FilePath))
-            filesToZip.Add(translatedTransferFile);
+        // Add translated transfer file if the uploaded transfer file(s) were not already the correct language
+        if (IsTranslationNeeded(gpkgFilePath))
+            filesToZip.Add(GetTranslatedTransferFile(transferFile));
 
         return filesToZip;
     }

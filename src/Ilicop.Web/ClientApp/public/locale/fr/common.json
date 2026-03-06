@@ -55,7 +55,8 @@
             "No transfer file found": "Aucun fichier de transfert valide n'a été trouvé",
             "Could not read model names from GeoPackage": "Impossible de lire les noms de modèle à partir de la base de données GeoPackage",
             "Invalid XML structure": "La structure XML du fichier de transfert est invalide",
-            "Data not conform to INTERLIS model": "Les données ne sont pas conformes au modèle INTERLIS"
+            "Data not conform to INTERLIS model": "Les données ne sont pas conformes au modèle INTERLIS",
+            "Unexpected content in transfer file": "Le fichier de transfert contient un contenu inattendu (Possiblement XML invalide ou modèle INTERLIS incorrect)"
         }
     },
   "logHierarchy": {

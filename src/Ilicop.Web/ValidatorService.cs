@@ -1,4 +1,5 @@
 ﻿using Geowerkstatt.Ilicop.Web.Contracts;
+using Geowerkstatt.Ilicop.Web.Exceptions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
@@ -45,6 +46,10 @@ namespace Geowerkstatt.Ilicop.Web
                 catch (MultipleTransferFileFoundException ex)
                 {
                     UpdateJobStatus(item.Id, Status.CompletedWithErrors, "Multiple transfer files found", ex.Message);
+                }
+                catch (InvalidTransferFileException ex)
+                {
+                    UpdateJobStatus(item.Id, Status.CompletedWithErrors, "Unexpected content in transfer file", ex.Message);
                 }
                 catch (TransferFileNotFoundException ex)
                 {

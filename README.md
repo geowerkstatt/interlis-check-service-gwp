@@ -190,7 +190,7 @@ Um den INTERLIS Web-Check-Service für GWP zu konfigurieren muss ein Config-Ordn
 
 - `{ConfigDir}`:<br>Ordner für die GWP Konfiguration. Enthält für jedes Profil einen eigenen Unterordner.
 - `{DataGpkgFileName}`:<br>Template GeoPackage Datei für das jeweilige Profil. Es muss das Schema für die benötigten INTERLIS Modelle enthalten.
-- `{QgisProjectFileName}`:<br>Optionales QGIS Projekt für das jeweilige Profil. Wird im QGIS Server für die Visualisierung der Ergebnisse verwendet.
+- `{QgisProjectFileName}`:<br>Optionales QGIS Projekt für das jeweilige Profil. Wird im QGIS Server für die Visualisierung der Ergebnisse verwendet. Im Web wird nur das erste Layer angezeigt. Dieses Layer kann aber ein Parent-Layer mit Child-Layers sein.
 - `{PostSqlScriptFileName}`:<br>Optionales SQL Script für das jeweilige Profil. Es wird mit dem Import der Logs von ili2gpkg mittels `--postScript` ausgeführt.
 - `{AdditionalFilesFolderName}`:<br>Optionaler Ordner für zusätzliche Dateien, die für das jeweilige Profil im ZIP ausgeliefert werden sollen.
 
