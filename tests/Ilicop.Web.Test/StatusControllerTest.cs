@@ -146,8 +146,8 @@ namespace Geowerkstatt.Ilicop.Web.Controllers
 
             var response = controller.GetStatus(apiVersionMock.Object, jobId) as OkObjectResult;
 
-            Assert.IsInstanceOfType(response, typeof(OkObjectResult));
-            Assert.IsInstanceOfType(response.Value, typeof(StatusResponse));
+            Assert.IsInstanceOfType<OkObjectResult>(response);
+            Assert.IsInstanceOfType<StatusResponse>(response.Value);
             Assert.AreEqual(StatusCodes.Status200OK, response.StatusCode);
             Assert.AreEqual(jobId, ((StatusResponse)response.Value).JobId);
             Assert.AreEqual($"/api/v8/mapservice/{jobId}", ((StatusResponse)response.Value).MapServiceUrl.ToString());

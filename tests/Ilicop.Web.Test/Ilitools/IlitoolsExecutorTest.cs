@@ -53,7 +53,7 @@ namespace Geowerkstatt.Ilicop.Web.Ilitools
             var request = CreateValidationRequest("/test/path", "test.xtf");
             var args = string.Join(" ", ilitoolsExecutor.GetCommonIlitoolsArguments(request));
 
-            Assert.IsFalse(args.Contains("--metaConfig"));
+            Assert.DoesNotContain("--metaConfig", args);
         }
 
         [TestMethod]
@@ -61,18 +61,18 @@ namespace Geowerkstatt.Ilicop.Web.Ilitools
         {
             var request = CreateValidationRequest("/test/path", "test.xtf", "DEFAULT", verboseLogging: false, log: true, xtfLog: true);
             var args = string.Join(" ", ilitoolsExecutor.GetCommonIlitoolsArguments(request));
-            Assert.IsFalse(args.Contains("--verbose"));
-            Assert.IsTrue(args.Contains("--log"));
-            Assert.IsTrue(args.Contains("--xtflog"));
+            Assert.DoesNotContain("--verbose", args);
+            Assert.Contains("--log", args);
+            Assert.Contains("--xtflog", args);
 
             request = CreateValidationRequest("/test/path", "test.xtf", "DEFAULT", verboseLogging: false, log: false, xtfLog: true);
             args = string.Join(" ", ilitoolsExecutor.GetCommonIlitoolsArguments(request));
-            Assert.IsFalse(args.Contains("--log"));
-            Assert.IsTrue(args.Contains("--xtflog"));
+            Assert.DoesNotContain("--log", args);
+            Assert.Contains("--xtflog", args);
 
             request = CreateValidationRequest("/test/path", "test.xtf", "DEFAULT", verboseLogging: false, log: false, xtfLog: false);
             args = string.Join(" ", ilitoolsExecutor.GetCommonIlitoolsArguments(request));
-            Assert.IsFalse(args.Contains("--xtflog"));
+            Assert.DoesNotContain("--xtflog", args);
         }
 
         [TestMethod]
