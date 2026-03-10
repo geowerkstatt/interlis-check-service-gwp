@@ -48,15 +48,8 @@ namespace Geowerkstatt.Ilicop.Web.Ilitools
                 // Bootstrap ilivalidator
                 await InitializeIlivalidatorAsync(cancellationToken);
 
-                // Bootstrap ili2gpkg if needed
-                if (ilitoolsEnvironment.EnableGpkgValidation)
-                {
-                    await InitializeIli2GpkgAsync(cancellationToken);
-                }
-                else
-                {
-                    logger.LogInformation("GPKG validation is disabled, skipping ili2gpkg bootstrap.");
-                }
+                // Bootstrap ili2gpkg
+                await InitializeIli2GpkgAsync(cancellationToken);
 
                 logger.LogInformation("Ilitools successfully initialized!");
                 logger.LogInformation(ilitoolsEnvironment.ToString());
