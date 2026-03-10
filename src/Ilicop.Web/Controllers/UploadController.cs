@@ -14,7 +14,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
 using UAParser;
-using static Geowerkstatt.Ilicop.Web.ValidatorHelper;
 
 namespace Geowerkstatt.Ilicop.Web.Controllers
 {
@@ -129,7 +128,7 @@ namespace Geowerkstatt.Ilicop.Web.Controllers
                 // Sanitize file name and save the file to the predefined home directory.
                 var transferFile = Path.ChangeExtension(
                     Path.GetRandomFileName(),
-                    file.FileName.GetSanitizedFileExtension(GetAcceptedFileExtensionsForUserUploads(configuration)));
+                    file.FileName.GetSanitizedFileExtension(processor.SupportedFileExtensions));
 
                 using (var stream = fileProvider.CreateFile(transferFile))
                 {

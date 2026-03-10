@@ -1,5 +1,7 @@
 ﻿using Geowerkstatt.Ilicop.Web.Contracts;
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,6 +12,11 @@ namespace Geowerkstatt.Ilicop.Web;
 /// </summary>
 public interface IProcessor
 {
+    /// <summary>
+    /// Gets the collection of file extensions this processors can accept and process.
+    /// </summary>
+    IEnumerable<string> SupportedFileExtensions { get; }
+
     /// <summary>
     /// Runs the processor for the specified job and profile.
     /// </summary>

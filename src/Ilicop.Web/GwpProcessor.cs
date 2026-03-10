@@ -6,7 +6,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
@@ -26,6 +25,9 @@ public class GwpProcessor : IProcessor
     private readonly ILogger<GwpProcessor> logger;
     private readonly GwpProcessorOptions gwpProcessorOptions;
     private readonly IlitoolsExecutor ilitoolsExecutor;
+    private readonly IEnumerable<string> allowedFileExtensionsForZippedFiles = [".xtf"];
+
+    public IEnumerable<string> SupportedFileExtensions => [".xtf", ".zip"];
 
     public GwpProcessor(
         IOptions<GwpProcessorOptions> gwpProcessorOptions,
@@ -50,19 +52,15 @@ public class GwpProcessor : IProcessor
             throw new GwpProcessorException($"No configuration directory found for profile <{profile.Id}>. Expected path: <{configDir}>");
         }
 
+        Exception validationException = null;
         var jobId = validator.Id;
         fileProvider.Initialize(jobId);
 
-        Exception validationException = null;
+        var xtfFilesToValidate = ExtractXtfFiles(transferFile);
 
         var dataGpkgFilePath = CopyTemplateGpkg(profile);
 
-        var importTransferFileExitCode = await ImportTransferFileToGpkg(fileProvider, dataGpkgFilePath, transferFile.FileName, cancellationToken);
-
-        if (importTransferFileExitCode != 0)
-        {
-            throw new InvalidTransferFileException($"Import of transfer file to GeoPackage failed for profile <{profile.Id}> with exit code <{importTransferFileExitCode}>.");
-        }
+        await ImportXtfFilesToGpkg(xtfFilesToValidate, dataGpkgFilePath, profile, cancellationToken);
 
         var translatedFile = await CreateTranslatedTransferFile(dataGpkgFilePath, transferFile, profile, cancellationToken);
 
@@ -81,6 +79,64 @@ public class GwpProcessor : IProcessor
         CreateZip(jobId, transferFile, profile);
 
         if (validationException != null) throw validationException;
+    }
+
+    private List<NamedFile> ExtractXtfFiles(NamedFile transferFile)
+    {
+        List<NamedFile> xtfFiles = new List<NamedFile>();
+        var transferFileIsZip = Path.GetExtension(transferFile.FilePath).Equals(".zip", StringComparison.OrdinalIgnoreCase);
+        if (transferFileIsZip)
+        {
+            xtfFiles = UnzipTransferFile(transferFile);
+        }
+        else
+        {
+            xtfFiles.Add(transferFile);
+        }
+
+        return xtfFiles;
+    }
+
+    private async Task ImportXtfFilesToGpkg(List<NamedFile> xtfFiles, string dataGpkgFilePath, Profile profile, CancellationToken cancellationToken)
+    {
+        foreach (var xtfFile in xtfFiles)
+        {
+            var importXtfExitCode = await ImportTransferFileToGpkg(fileProvider, dataGpkgFilePath, xtfFile.FileName, cancellationToken);
+            if (importXtfExitCode != 0)
+            {
+                throw new InvalidTransferFileException($"Import of transfer file <{xtfFile.FileName}> to GeoPackage failed for profile <{profile.Id}> with exit code <{importXtfExitCode}>.");
+            }
+        }
+    }
+
+    private List<NamedFile> UnzipTransferFile(NamedFile transferFile)
+    {
+        logger.LogInformation("Unzipping compressed file <{TransferFile}>", transferFile);
+
+        using var archive = ZipFile.OpenRead(transferFile.FilePath);
+
+        var unsupportedFile = archive.Entries
+            .FirstOrDefault(e => !allowedFileExtensionsForZippedFiles.Contains(Path.GetExtension(e.Name), StringComparer.OrdinalIgnoreCase));
+
+        if (unsupportedFile != null)
+        {
+            throw new UnknownExtensionException(Path.GetExtension(unsupportedFile.Name), $"The ZIP file contains unsupported file types.");
+        }
+
+        var xtfFiles = new List<NamedFile>();
+        foreach (var entry in archive.Entries)
+        {
+            var sanitizedFileName = Path.ChangeExtension(
+                Path.GetRandomFileName(),
+                entry.Name.GetSanitizedFileExtension(allowedFileExtensionsForZippedFiles));
+            var extractedFilePath = Path.Combine(fileProvider.HomeDirectory.FullName, sanitizedFileName);
+            var extractedFile = new NamedFile(extractedFilePath, entry.Name);
+
+            entry.ExtractToFile(extractedFile.FilePath);
+            xtfFiles.Add(extractedFile);
+        }
+
+        return xtfFiles;
     }
 
     private async Task<NamedFile> CreateTranslatedTransferFile(string gpkgPath, NamedFile transferFile, Profile profile, CancellationToken cancellationToken)
