@@ -75,6 +75,7 @@ public class GwpProcessor : IProcessor
 
         TryGetPostSqlScriptPath(profile, out var postSqlScriptPath);
         var importLogTransferFileExitCode = await ImportLogToGpkg(fileProvider, dataGpkgFilePath, postSqlScriptPath, cancellationToken);
+        CreateErrorStatisticCsv(dataGpkgFilePath);
         TryCopyQgisServiceFile(fileProvider, profile);
         CreateZip(jobId, transferFile, profile);
 
@@ -195,6 +196,45 @@ public class GwpProcessor : IProcessor
         return dataGpkgFilePath;
     }
 
+    private void CreateErrorStatisticCsv(string dataGpkgFilePath)
+    {
+        var errorStatCsvFilePath = Path.Combine(fileProvider.HomeDirectory.FullName, gwpProcessorOptions.ErrorStatisticCsvFileName);
+
+        try
+        {
+            var connectionString = $"Data Source={dataGpkgFilePath}";
+            using var connection = new SqliteConnection(connectionString);
+            connection.Open();
+
+            using var command = connection.CreateCommand();
+            command.CommandText = "SELECT * FROM \"v_error_stat\"";
+
+            using var reader = command.ExecuteReader();
+            using var writer = new StreamWriter(errorStatCsvFilePath);
+
+            // Write header
+            writer.WriteLine("Priority,Number");
+
+            // Write data rows
+            while (reader.Read())
+            {
+                var priority = reader.GetValue(0);
+                var number = reader.GetValue(1);
+                writer.WriteLine($"{priority},{number}");
+            }
+
+            SqliteConnection.ClearAllPools();
+        }
+        catch (SqliteException ex)
+        {
+            throw new GwpProcessorException($"Failed to create error statistic CSV. View 'v_error_stat' might not exist in data.gpkg.", ex);
+        }
+        catch (Exception ex)
+        {
+            throw new GwpProcessorException("Failed to create error statistic CSV.", ex);
+        }
+    }
+
     private bool TryCopyQgisServiceFile(IFileProvider fileProvider, Profile profile)
     {
         var serviceFile = Path.Combine(configDir.FullName, profile.Id, gwpProcessorOptions.QgisProjectFileName);
@@ -292,6 +332,11 @@ public class GwpProcessor : IProcessor
         var gpkgFilePath = Path.Combine(fileProvider.HomeDirectory.FullName, gwpProcessorOptions.DataGpkgFileName);
         if (File.Exists(gpkgFilePath))
             filesToZip.Add(new NamedFile(gpkgFilePath, gwpProcessorOptions.DataGpkgFileName));
+
+        // Add error statistic CSV if exists
+        var errorStatCsvFilePath = Path.Combine(fileProvider.HomeDirectory.FullName, gwpProcessorOptions.ErrorStatisticCsvFileName);
+        if (File.Exists(errorStatCsvFilePath))
+            filesToZip.Add(new NamedFile(errorStatCsvFilePath, gwpProcessorOptions.ErrorStatisticCsvFileName));
 
         // Add translated transfer file if the uploaded transfer file(s) were not already the correct language
         if (IsTranslationNeeded(gpkgFilePath))

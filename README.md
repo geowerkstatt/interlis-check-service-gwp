@@ -203,6 +203,7 @@ Die Pfade, Namen und Weiteres können im `appsettings.json` konfiguriert werden:
     "PostSqlScriptFileName": "", // default: "postscript.sql"
     "AdditionalFilesFolderName": "" // default: "AdditionalFiles"
     "ZipOutputFileName": "" // default: "gwp_results_log.zip". Interner Name der ZIP Datei, welche für jeden Job erstellt wird.
+    "ErrorStatisticCsvFileName": "" // default: "error_stat.csv". Name mit welchem die generierte CSV Datei mit der Fehler-Statistik dem ZIP hinzugefügt wird.
 }
 ```
 

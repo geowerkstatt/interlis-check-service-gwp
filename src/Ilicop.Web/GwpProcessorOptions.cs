@@ -40,4 +40,9 @@ public class GwpProcessorOptions
     /// This script is executed with the last ili2gpkg import command using the --postScript parameter.
     /// </summary>
     public string PostSqlScriptFileName { get; set; } = "postscript.sql";
+
+    /// <summary>
+    /// The name of the CSV file containing error statistics.
+    /// </summary>
+    public string ErrorStatisticCsvFileName { get; set; } = "error_stat.csv";
 }
