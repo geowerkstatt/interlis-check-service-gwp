@@ -15,7 +15,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
 using UAParser;
-using static Geowerkstatt.Ilicop.Web.ValidatorHelper;
 
 namespace Geowerkstatt.Ilicop.Web.Controllers
 {
@@ -130,7 +129,7 @@ namespace Geowerkstatt.Ilicop.Web.Controllers
                 // Sanitize file name and save the file to the predefined home directory.
                 var transferFile = Path.ChangeExtension(
                     Path.GetRandomFileName(),
-                    file.FileName.GetSanitizedFileExtension(GetAcceptedFileExtensionsForUserUploads(configuration)));
+                    file.FileName.GetSanitizedFileExtension(processor.SupportedFileExtensions));
 
                 using (var stream = fileProvider.CreateFile(transferFile))
                 {
@@ -143,26 +142,14 @@ namespace Geowerkstatt.Ilicop.Web.Controllers
                     httpRequest.ContentLength,
                     formattedUserAgent);
 
+                var namedTransferFile = new NamedFile(
+                    Path.Combine(fileProvider.HomeDirectory.FullName, transferFile),
+                    file.FileName);
+
                 // Add validation job to queue.
                 await validatorService.EnqueueJobAsync(
                     validator.Id,
-                    async cancellationToken =>
-                    {
-                        var namedTransferFile = new NamedFile(
-                            Path.Combine(fileProvider.HomeDirectory.FullName, transferFile),
-                            file.FileName);
-
-                        try
-                        {
-                            await validator.ExecuteAsync(transferFile, foundProfile, cancellationToken);
-                            await processor.Run(validator.Id, namedTransferFile, foundProfile, cancellationToken);
-                        }
-                        catch (ValidationFailedException)
-                        {
-                            await processor.Run(validator.Id, namedTransferFile, foundProfile, cancellationToken);
-                            throw;
-                        }
-                    });
+                    cancellationToken => processor.Run(validator, namedTransferFile, foundProfile, cancellationToken));
 
                 logger.LogInformation("Job with id <{JobId}> is scheduled for execution.", validator.Id);
 

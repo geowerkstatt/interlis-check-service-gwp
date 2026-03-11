@@ -239,7 +239,7 @@ namespace Geowerkstatt.Ilicop.Web.Ilitools
             {
                 "-jar",
                 $"\"{ilitoolsEnvironment.Ili2GpkgPath}\"",
-                "--import",
+                "--update",
                 "--disableValidation",
                 "--skipReferenceErrors",
                 "--skipGeometryErrors",

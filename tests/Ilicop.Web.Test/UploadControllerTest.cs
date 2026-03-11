@@ -48,6 +48,7 @@ namespace Geowerkstatt.Ilicop.Web.Controllers
             apiVersionMock = new Mock<ApiVersion>(MockBehavior.Strict, 9, 88, null);
 
             validatorMock.SetupGet(x => x.Id).Returns(new Guid(jobId));
+            processorMock.SetupGet(x => x.SupportedFileExtensions).Returns([".xtf"]);
 
             controller = new UploadController(
                 loggerMock.Object,

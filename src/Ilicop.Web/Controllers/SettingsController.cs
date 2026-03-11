@@ -16,12 +16,14 @@ namespace Geowerkstatt.Ilicop.Web.Controllers
         private readonly ILogger<SettingsController> logger;
         private readonly IConfiguration configuration;
         private readonly IlitoolsEnvironment ilitoolsEnvironment;
+        private readonly IProcessor processor;
 
-        public SettingsController(ILogger<SettingsController> logger, IConfiguration configuration, IlitoolsEnvironment ilitoolsEnvironment)
+        public SettingsController(ILogger<SettingsController> logger, IConfiguration configuration, IlitoolsEnvironment ilitoolsEnvironment, IProcessor processor)
         {
             this.logger = logger;
             this.configuration = configuration;
             this.ilitoolsEnvironment = ilitoolsEnvironment;
+            this.processor = processor;
         }
 
         /// <summary>
@@ -43,7 +45,7 @@ namespace Geowerkstatt.Ilicop.Web.Controllers
                 Ili2gpkgVersion = ilitoolsEnvironment.EnableGpkgValidation
                     ? (ilitoolsEnvironment.Ili2GpkgVersion ?? "undefined/not configured")
                     : "disabled",
-                AcceptedFileTypes = GetAcceptedFileExtensionsForUserUploads(configuration).JoinNonEmpty(", "),
+                AcceptedFileTypes = processor.SupportedFileExtensions.JoinNonEmpty(", "),
             });
         }
     }

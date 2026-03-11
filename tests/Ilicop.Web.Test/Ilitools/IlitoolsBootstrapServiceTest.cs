@@ -1,4 +1,5 @@
 ﻿using Geowerkstatt.Ilicop.Web.Ilitools;
+using Geowerkstatt.Interlis.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -50,25 +51,27 @@ namespace Geowerkstatt.Ilicop.Ilitools
                 EnableGpkgValidation = false,
             };
 
-            var configValues = new Dictionary<string, string> { { "ILIVALIDATOR_VERSION", "0.0.0" } };
+            var configValues = new Dictionary<string, string>
+            {
+                { "ILIVALIDATOR_VERSION", "0.0.0" },
+                { "ILI2GPKG_VERSION", "0.0.0" },
+            };
             var configuration = new ConfigurationBuilder()
                 .AddInMemoryCollection(configValues)
                 .Build();
 
-            // Setup HTTP response for download
-            using var response = new HttpResponseMessage
-            {
-                StatusCode = HttpStatusCode.OK,
-                Content = new ByteArrayContent(File.ReadAllBytes("mock.zip")),
-            };
-
+            // Setup HTTP response for download - create fresh response for each call
             httpMessageHandlerMock
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
                     ItExpr.IsAny<HttpRequestMessage>(),
                     ItExpr.IsAny<CancellationToken>())
-                .ReturnsAsync(response);
+                .ReturnsAsync(() => new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new ByteArrayContent(File.ReadAllBytes("mock.zip")),
+                });
 
             var service = new IlitoolsBootstrapService(loggerMock.Object, configuration, httpClient, ilitoolsEnvironment);
 
@@ -80,6 +83,7 @@ namespace Geowerkstatt.Ilicop.Ilitools
 
             // Verify environment variables are set
             Assert.AreEqual("0.0.0", Environment.GetEnvironmentVariable("ILIVALIDATOR_VERSION"));
+            Assert.AreEqual("0.0.0", Environment.GetEnvironmentVariable("ILI2GPKG_VERSION"));
             Assert.AreEqual(Path.Combine(TestContext.DeploymentDirectory, "ARKSHARK"), Environment.GetEnvironmentVariable("ILI_CACHE"));
 
             // Verify files were extracted
@@ -160,15 +164,24 @@ namespace Geowerkstatt.Ilicop.Ilitools
                 EnableGpkgValidation = false,
             };
 
-            var configValues = new Dictionary<string, string> { { "ILIVALIDATOR_VERSION", "0.0.0" } };
+            var configValues = new Dictionary<string, string>
+            {
+                { "ILIVALIDATOR_VERSION", "0.0.0" },
+                { "ILI2GPKG_VERSION", "0.0.0" },
+            };
             var configuration = new ConfigurationBuilder()
                 .AddInMemoryCollection(configValues)
                 .Build();
 
-            // Pre-create the install directory
-            var installDir = Path.Combine(TestContext.DeploymentDirectory, "STELLARWITCH", "ilivalidator", "0.0.0");
-            Directory.CreateDirectory(installDir);
-            ZipFile.ExtractToDirectory("mock.zip", installDir, overwriteFiles: true);
+            // Pre-create the install ilivalidator directory
+            var ilivalidatorInstallDir = Path.Combine(TestContext.DeploymentDirectory, "STELLARWITCH", "ilivalidator", "0.0.0");
+            Directory.CreateDirectory(ilivalidatorInstallDir);
+            ZipFile.ExtractToDirectory("mock.zip", ilivalidatorInstallDir, overwriteFiles: true);
+
+            // Pre-create the install ili2gpkg directory
+            var ili2gpkgInstallDir = Path.Combine(TestContext.DeploymentDirectory, "STELLARWITCH", "ili2gpkg", "0.0.0");
+            Directory.CreateDirectory(ili2gpkgInstallDir);
+            ZipFile.ExtractToDirectory("mock.zip", ili2gpkgInstallDir, overwriteFiles: true);
 
             var service = new IlitoolsBootstrapService(loggerMock.Object, configuration, httpClient, ilitoolsEnvironment);
 
