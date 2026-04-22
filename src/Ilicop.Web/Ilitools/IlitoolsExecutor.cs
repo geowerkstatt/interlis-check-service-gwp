@@ -337,6 +337,8 @@ namespace Geowerkstatt.Ilicop.Web.Ilitools
         /// <returns>The exit code that the associated process specified when it terminated.</returns>
         private async Task<int> ExecuteJavaCommandAsync(string command, CancellationToken cancellationToken)
         {
+            command = $"-Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8 {command}";
+
             logger.LogInformation("Executing command: java {Command}", command);
 
             using var process = new Process
