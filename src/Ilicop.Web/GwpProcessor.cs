@@ -213,14 +213,16 @@ public class GwpProcessor : IProcessor
             using var writer = new StreamWriter(errorStatCsvFilePath);
 
             // Write header
-            writer.WriteLine("Priority,Number");
+            writer.WriteLine("Priority,Number,Description");
 
             // Write data rows
             while (reader.Read())
             {
                 var priority = reader.GetValue(0);
                 var number = reader.GetValue(1);
-                writer.WriteLine($"{priority},{number}");
+                var description = reader.GetValue(2) as string ?? string.Empty;
+                description = description.Replace("\"", "\"\""); // Escape double quotes for CSV format
+                writer.WriteLine($"{priority},{number},\"{description}\"");
             }
 
             SqliteConnection.ClearAllPools();
