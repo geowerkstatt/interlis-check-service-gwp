@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## v5.0.10 - 2026-04-22
+
 ### Changed
 
 - Updated to .NET 10.0.
